@@ -52,7 +52,7 @@ def read_graph_from_dot(filename):
     return nx.MultiDiGraph(nx.nx_pydot.from_pydot(graphs))
 
 
-def create_and_save_two_cyclic_graph(
+def create_and_save_two_cycles_graph(
         cycle_sizes: Tuple[int, int],
         labels: Tuple[str, str],
         filename

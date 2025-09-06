@@ -21,11 +21,11 @@ def tmp_dataset_dir():
             file.unlink()
 
 
-def test_create_and_save_two_cyclic_graph(tmp_dataset_dir):
+def test_create_and_save_two_cycles_graph(tmp_dataset_dir):
     filename = TMP_DATASET_DIR / "two_cycles.dot"
     cycle_sizes = (3, 3)
     labels = ("x", "y")
-    t1.create_and_save_two_cyclic_graph(cycle_sizes, labels, str(filename))
+    t1.create_and_save_two_cycles_graph(cycle_sizes, labels, str(filename))
 
     assert filename.exists()
 
@@ -43,8 +43,8 @@ def test_two_identical_graphs_are_equal(tmp_dataset_dir):
     cycle_sizes = (4, 5)
     labels = ("a", "b")
 
-    t1.create_and_save_two_cyclic_graph(cycle_sizes, labels, str(filename1))
-    t1.create_and_save_two_cyclic_graph(cycle_sizes, labels, str(filename2))
+    t1.create_and_save_two_cycles_graph(cycle_sizes, labels, str(filename1))
+    t1.create_and_save_two_cycles_graph(cycle_sizes, labels, str(filename2))
 
     g1 = t1.read_graph_from_dot(filename1)
     g2 = t1.read_graph_from_dot(filename2)
@@ -62,4 +62,4 @@ def test_edge_case_empty_graph(tmp_dataset_dir):
     cycle_sizes = (0, 0)
     labels = ("x", "y")
     with pytest.raises(IndexError):
-        t1.create_and_save_two_cyclic_graph(cycle_sizes, labels, str(filename))
+        t1.create_and_save_two_cycles_graph(cycle_sizes, labels, str(filename))
