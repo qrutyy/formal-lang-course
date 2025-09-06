@@ -16,13 +16,14 @@ def get_graph_metadata(graph: nx.MultiDiGraph):
     return GraphMetadata(graph.number_of_nodes, graph.number_of_edges, labels)
 
 
-def get_graph_by_name(graph_name):
+# gets graph from cfpq dataset (naming could be more clean, but the task doesn't specify from where the graph should be loaded, so....)
+def get_cfpq_graph_by_name(graph_name):
     path = cd.download(graph_name)
     return cd.graph_from_csv(path)
 
 
 def get_graph_metadata_by_name(graph_name):
-    graph = get_graph_by_name(graph_name)
+    graph = get_cfpq_graph_by_name(graph_name)
     return get_graph_metadata(graph)
 
 
@@ -32,7 +33,7 @@ def get_graph_md_from_loc_csv(graph_name):
 
 
 def save_nx_graph_to_dot(nx_graph: nx.MultiDiGraph, filename):
-    dot_graph = nx.drawing.nx_pydot.to_pydot(nx_graph).create_dot()
+    dot_graph = nx.drawing.nx_pydot.to_pydot(nx_graph)
     dot_graph.write_dot(filename)
 
 
@@ -42,5 +43,5 @@ def create_and_save_two_cyclic_graph(
         filename
 ):
     graph = cd.labeled_two_cycles_graph(cycle_sizes[0], cycle_sizes[1],
-                                        0, labels)
+                                        labels=labels)
     save_nx_graph_to_dot(graph, filename)
