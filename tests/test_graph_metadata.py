@@ -7,7 +7,8 @@ from project import t1_graph_utils as t1
 
 DATASET_DIR = pathlib.Path(__file__).parent / "datasets"
 
-def get_meta_directly_from_csv(csv_path):
+
+def helper_get_meta_directly_from_csv(csv_path):
     vertices_set = set()
     edges_count = 0
     with open(csv_path, newline="") as f:
@@ -38,7 +39,7 @@ def test_empty_graph():
                           "regular_graph_3.csv"])
 def test_regular_graph(filename):
     filepath = str(DATASET_DIR / filename)
-    direct_meta = get_meta_directly_from_csv(filepath)
+    direct_meta = helper_get_meta_directly_from_csv(filepath)
     meta = t1.get_graph_md_from_loc_csv(str(DATASET_DIR / filename))
 
     assert meta.edges_num == direct_meta[0]
@@ -67,7 +68,7 @@ def test_no_labels_graph():
     "atom",
     "biomedical"
 ])
-def test_get_graph_by_name_returns_graph(graph_name):
+def test_get_cfpq_graph_by_name(graph_name):
     graph = t1.get_cfpq_graph_by_name(graph_name)
 
     assert isinstance(graph, nx.MultiDiGraph)
@@ -76,6 +77,6 @@ def test_get_graph_by_name_returns_graph(graph_name):
     assert graph.number_of_edges() > 0
 
 
-def test_get_graph_by_name_invalid_name():
+def test_get_cfpq_graph_by_name_invalid_name():
     with pytest.raises(FileNotFoundError):
         t1.get_cfpq_graph_by_name("non_existing_graph_xyz")

@@ -14,10 +14,16 @@ class GraphMetadata:
 
 def get_graph_metadata(graph: nx.MultiDiGraph):
     labels = [d for _, _, d in graph.edges.data()]
-    return GraphMetadata(graph.number_of_nodes(), graph.number_of_edges(), labels)
+    return GraphMetadata(
+        graph.number_of_nodes(),
+        graph.number_of_edges(),
+        labels)
 
 
-# gets graph from cfpq dataset (naming could be more clean, but the task doesn't specify from where the graph should be loaded, so....)
+# gets graph from cfpq dataset
+# (naming could be more clean, but the task doesn't specify
+# from where the graph should be loaded, so....)
+# btw, local loader will be usefull while testing
 def get_cfpq_graph_by_name(graph_name):
     path = cd.download(graph_name)
     return cd.graph_from_csv(path)
