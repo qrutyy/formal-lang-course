@@ -1,6 +1,7 @@
 import cfpq_data as cd
 import networkx as nx
 import dataclasses
+import pydot
 from typing import Tuple
 
 
@@ -13,7 +14,7 @@ class GraphMetadata:
 
 def get_graph_metadata(graph: nx.MultiDiGraph):
     labels = [d for _, _, d in graph.edges.data()]
-    return GraphMetadata(graph.number_of_nodes, graph.number_of_edges, labels)
+    return GraphMetadata(graph.number_of_nodes(), graph.number_of_edges(), labels)
 
 
 # gets graph from cfpq dataset (naming could be more clean, but the task doesn't specify from where the graph should be loaded, so....)
@@ -35,6 +36,13 @@ def get_graph_md_from_loc_csv(graph_name):
 def save_nx_graph_to_dot(nx_graph: nx.MultiDiGraph, filename):
     dot_graph = nx.drawing.nx_pydot.to_pydot(nx_graph)
     dot_graph.write_dot(filename)
+
+
+def read_graph_from_dot(filename):
+    graphs = pydot.graph_from_dot_file(str(filename))
+    if isinstance(graphs, list):
+        graphs = graphs[0]
+    return nx.MultiDiGraph(nx.nx_pydot.from_pydot(graphs))
 
 
 def create_and_save_two_cyclic_graph(
