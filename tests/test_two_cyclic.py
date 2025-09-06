@@ -35,3 +35,34 @@ def test_create_and_save_two_cyclic_graph(tmp_dataset_dir):
     edge_labels = [d.get("label") for _, _, d in loaded_graph.edges(data=True)]
     for label in labels:
         assert label in edge_labels
+
+
+def test_two_identical_graphs_are_equal(tmp_dataset_dir):
+    filename1 = TMP_DATASET_DIR / "graph1.dot"
+    filename2 = TMP_DATASET_DIR / "graph2.dot"
+    cycle_sizes = (4, 5)
+    labels = ("a", "b")
+
+    t1.create_and_save_two_cyclic_graph(cycle_sizes, labels, str(filename1))
+    t1.create_and_save_two_cyclic_graph(cycle_sizes, labels, str(filename2))
+
+    g1 = t1.read_graph_from_dot(filename1)
+    g2 = t1.read_graph_from_dot(filename2)
+
+    assert g1.number_of_nodes() == g2.number_of_nodes()
+    assert g1.number_of_edges() == g2.number_of_edges()
+
+    labels1 = {d.get("label") for _, _, d in g1.edges(data=True)}
+    labels2 = {d.get("label") for _, _, d in g2.edges(data=True)}
+    assert labels1 == labels2
+
+
+def test_edge_case_empty_graph(tmp_dataset_dir):
+    filename = TMP_DATASET_DIR / "empty_cycles.dot"
+    cycle_sizes = (0, 0)
+    labels = ("x", "y")
+    t1.create_and_save_two_cyclic_graph(cycle_sizes, labels, str(filename))
+
+    g = t1.read_graph_from_dot(filename)
+    assert g.number_of_nodes() == 1
+    assert g.number_of_edges() == 0
