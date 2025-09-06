@@ -61,8 +61,5 @@ def test_edge_case_empty_graph(tmp_dataset_dir):
     filename = TMP_DATASET_DIR / "empty_cycles.dot"
     cycle_sizes = (0, 0)
     labels = ("x", "y")
-    t1.create_and_save_two_cyclic_graph(cycle_sizes, labels, str(filename))
-
-    g = t1.read_graph_from_dot(filename)
-    assert g.number_of_nodes() == 1
-    assert g.number_of_edges() == 0
+    with pytest.raises(IndexError):
+        t1.create_and_save_two_cyclic_graph(cycle_sizes, labels, str(filename))

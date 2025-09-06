@@ -11,18 +11,21 @@ DATASET_DIR = pathlib.Path(__file__).parent / "datasets"
 def helper_get_meta_directly_from_csv(csv_path):
     vertices_set = set()
     edges_count = 0
+    labels = set()
+
     with open(csv_path, newline="") as f:
         reader = csv.reader(f, delimiter=" ")
         for row in reader:
             source = int(row[0])
             target = int(row[1])
+            labels.add(str(row[2]))
             vertices_set.update([source, target])
             edges_count += 1
 
     expected_vertices = len(vertices_set)
     expected_edges = edges_count
 
-    return expected_edges, expected_vertices
+    return [expected_edges, expected_vertices, labels]
 
 
 def test_empty_graph():
@@ -33,11 +36,16 @@ def test_empty_graph():
     assert meta.labels == []
 
 
+def test_unknown_graph_name():
+    with pytest.raises(FileNotFoundError):
+        t1.get_graph_md_from_loc_csv("not_existing.csv")
+
+
 @pytest.mark.parametrize("filename",
                          ["regular_graph_1.csv",
                           "regular_graph_2.csv",
                           "regular_graph_3.csv"])
-def test_regular_graph(filename):
+def test_regular_graph_meta_compliance(filename):
     filepath = str(DATASET_DIR / filename)
     direct_meta = helper_get_meta_directly_from_csv(filepath)
     meta = t1.get_graph_md_from_loc_csv(str(DATASET_DIR / filename))
@@ -47,9 +55,18 @@ def test_regular_graph(filename):
     assert any(meta.labels)
 
 
-def test_unknown_graph_name():
-    with pytest.raises(FileNotFoundError):
-        t1.get_graph_md_from_loc_csv("not_existing.csv")
+@pytest.mark.parametrize("filename",
+                         ["regular_graph_1.csv",
+                          "regular_graph_2.csv",
+                          "regular_graph_3.csv"])
+def test_label_uniqueness(filename):
+    filepath = str(DATASET_DIR / filename)
+    direct_meta = helper_get_meta_directly_from_csv(filepath)
+    meta = t1.get_graph_md_from_loc_csv(str(DATASET_DIR / filename))
+
+    assert meta.edges_num > 0
+    assert meta.vertices_num > 0
+    assert set(meta.labels) == direct_meta[2]
 
 
 def test_no_labels_graph():
@@ -58,7 +75,7 @@ def test_no_labels_graph():
 
     assert meta.vertices_num > 0
     assert meta.edges_num > 0
-    assert all(math.isnan(list(label.values())[0]) for label in meta.labels)
+    assert all(math.isnan(label) for label in meta.labels)
 
 
 @pytest.mark.parametrize("graph_name", [

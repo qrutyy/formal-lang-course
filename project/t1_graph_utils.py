@@ -13,11 +13,12 @@ class GraphMetadata:
 
 
 def get_graph_metadata(graph: nx.MultiDiGraph):
-    labels = [d for _, _, d in graph.edges.data()]
+    unique_labels = {d["label"] for _, _, d in graph.edges(data=True) if "label" in d}
     return GraphMetadata(
-        graph.number_of_nodes(),
-        graph.number_of_edges(),
-        labels)
+        vertices_num=graph.number_of_nodes(),
+        edges_num=graph.number_of_edges(),
+        labels=list(unique_labels)
+    )
 
 
 # gets graph from cfpq dataset
