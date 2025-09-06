@@ -6,16 +6,16 @@ from typing import Tuple
 
 
 @dataclasses.dataclass
-class GraphMetadata:
-    vertices_num: int
+class GraphMD:
+    nodes_num: int
     edges_num: int
     labels: list
 
 
-def get_graph_metadata(graph: nx.MultiDiGraph):
+def get_graph_md(graph: nx.MultiDiGraph):
     unique_labels = {d["label"] for _, _, d in graph.edges(data=True) if "label" in d}
-    return GraphMetadata(
-        vertices_num=graph.number_of_nodes(),
+    return GraphMD(
+        nodes_num=graph.number_of_nodes(),
         edges_num=graph.number_of_edges(),
         labels=list(unique_labels)
     )
@@ -30,14 +30,14 @@ def get_cfpq_graph_by_name(graph_name):
     return cd.graph_from_csv(path)
 
 
-def get_graph_metadata_by_name(graph_name):
+def get_cfpq_graph_md_by_name(graph_name):
     graph = get_cfpq_graph_by_name(graph_name)
-    return get_graph_metadata(graph)
+    return get_graph_md(graph)
 
 
 def get_graph_md_from_loc_csv(graph_name):
     graph = cd.graph_from_csv(graph_name)
-    return get_graph_metadata(graph)
+    return get_graph_md(graph)
 
 
 def save_nx_graph_to_dot(nx_graph: nx.MultiDiGraph, filename):
