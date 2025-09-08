@@ -40,12 +40,13 @@ def get_graph_md_from_loc_csv(graph_name):
     return get_graph_md(graph)
 
 
-def save_nx_graph_to_dot(nx_graph: nx.MultiDiGraph, filename):
+def save_nx_graph_to_dot(nx_graph: nx.MultiDiGraph, filename: str):
     dot_graph = nx.drawing.nx_pydot.to_pydot(nx_graph)
-    dot_graph.write_dot(filename)
+    with open(filename, "w", encoding="utf-8") as f:
+        f.write(dot_graph.to_string())  # serialize directly, no external binary
 
 
-def read_graph_from_dot(filename):
+def read_graph_from_dot(filename: str) -> nx.MultiDiGraph:
     graphs = pydot.graph_from_dot_file(str(filename))
     if isinstance(graphs, list):
         graphs = graphs[0]
