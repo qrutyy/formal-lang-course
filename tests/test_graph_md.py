@@ -15,6 +15,7 @@ GRAPH_SPECS = [
     ("biomedical", 341, 459),
 ]
 
+
 def helper_get_md_directly_from_csv(csv_path):
     nodes_set = set()
     edges_count = 0
@@ -48,10 +49,9 @@ def test_unknown_graph_name():
         t1.get_graph_md_from_loc_csv("not_existing.csv")
 
 
-@pytest.mark.parametrize("filename",
-                         ["regular_graph_1.csv",
-                          "regular_graph_2.csv",
-                          "regular_graph_3.csv"])
+@pytest.mark.parametrize(
+    "filename", ["regular_graph_1.csv", "regular_graph_2.csv", "regular_graph_3.csv"]
+)
 def test_regular_graph_md_compliance(filename):
     filepath = str(DATASET_DIR / filename)
     direct_md = helper_get_md_directly_from_csv(filepath)
@@ -62,10 +62,9 @@ def test_regular_graph_md_compliance(filename):
     assert any(md.labels)
 
 
-@pytest.mark.parametrize("filename",
-                         ["regular_graph_1.csv",
-                          "regular_graph_2.csv",
-                          "regular_graph_3.csv"])
+@pytest.mark.parametrize(
+    "filename", ["regular_graph_1.csv", "regular_graph_2.csv", "regular_graph_3.csv"]
+)
 def test_label_uniqueness(filename):
     filepath = str(DATASET_DIR / filename)
     direct_md = helper_get_md_directly_from_csv(filepath)
@@ -91,6 +90,7 @@ def test_get_cfpq_graph_by_name(graph_name, expected_nodes, expected_edges):
 
     assert isinstance(graph, nx.MultiDiGraph)
 
+
 @pytest.mark.parametrize("graph_name, expected_nodes, expected_edges", GRAPH_SPECS)
 def test_get_cfpq_graph_md_by_name(graph_name, expected_nodes, expected_edges):
     md = t1.get_cfpq_graph_md_by_name(graph_name)
@@ -99,7 +99,9 @@ def test_get_cfpq_graph_md_by_name(graph_name, expected_nodes, expected_edges):
     assert md.edges_num == expected_edges, f"{graph_name}: edges mismatch"
 
     assert all(isinstance(label, str) for label in md.labels)
-    assert len(md.labels) == len(set(md.labels)), f"{graph_name}: duplicate labels found"
+    assert len(md.labels) == len(set(md.labels)), (
+        f"{graph_name}: duplicate labels found"
+    )
 
 
 def test_get_cfpq_graph_by_name_invalid_name():

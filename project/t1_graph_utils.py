@@ -17,7 +17,7 @@ def get_graph_md(graph: nx.MultiDiGraph):
     return GraphMD(
         nodes_num=graph.number_of_nodes(),
         edges_num=graph.number_of_edges(),
-        labels=list(unique_labels)
+        labels=list(unique_labels),
     )
 
 
@@ -53,10 +53,7 @@ def read_graph_from_dot(filename):
 
 
 def create_and_save_two_cycles_graph(
-        cycle_sizes: Tuple[int, int],
-        labels: Tuple[str, str],
-        filename
+    cycle_sizes: Tuple[int, int], labels: Tuple[str, str], filename
 ):
-    graph = cd.labeled_two_cycles_graph(cycle_sizes[0], cycle_sizes[1],
-                                        labels=labels)
+    graph = cd.labeled_two_cycles_graph(cycle_sizes[0], cycle_sizes[1], labels=labels)
     save_nx_graph_to_dot(graph, filename)
