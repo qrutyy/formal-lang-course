@@ -1,4 +1,3 @@
-import pytest
 from pyformlang.finite_automaton import Symbol
 from project import t2_fa_utils as t2
 
