@@ -22,7 +22,10 @@ def make_simple_nfa(set_transactions):
 
     return nfa
 
-def make_random_nfa(alphabet, n_states, start_states_num, final_states_num, transitions_num=None):
+
+def make_random_nfa(
+    alphabet, n_states, start_states_num, final_states_num, transitions_num=None
+):
     nfa = NondeterministicFiniteAutomaton()
 
     states = [State(f"q{i}") for i in range(n_states)]
@@ -56,7 +59,10 @@ def test_from_pyformlang_nfa():
 
     assert fa.n_states == 2
 
-    assert fa.start_states.tolist() == [True, False] or fa.start_states.tolist() == [False, True]
+    assert fa.start_states.tolist() == [True, False] or fa.start_states.tolist() == [
+        False,
+        True,
+    ]
     assert fa.final_states.sum() == 1
 
     mat_a = fa.transitions["a"].toarray()
@@ -68,13 +74,16 @@ def test_from_pyformlang_nfa():
     assert (mat_b == np.array([[0, 0], [1, 0]], dtype=bool)).any()
 
 
-@pytest.mark.parametrize("nfa, is_empty_truth", [
-    (make_simple_nfa(False), True),
-    (make_random_nfa(["a", "b", "c", "d"], 4, 1, 1, 0), True),
-    (make_random_nfa(["a"], 4, 4, 4, 0), False),
-    (make_random_nfa([], 1, 1, 1, 0), False),
-    (make_random_nfa(["a"], 1, 1, 1, 1), False)
-])
+@pytest.mark.parametrize(
+    "nfa, is_empty_truth",
+    [
+        (make_simple_nfa(False), True),
+        (make_random_nfa(["a", "b", "c", "d"], 4, 1, 1, 0), True),
+        (make_random_nfa(["a"], 4, 4, 4, 0), False),
+        (make_random_nfa([], 1, 1, 1, 0), False),
+        (make_random_nfa(["a"], 1, 1, 1, 1), False),
+    ],
+)
 def test_am_emptyness(nfa, is_empty_truth):
     fa = t3.AdjacencyMatrixFA(nfa)
     assert fa.is_empty() == is_empty_truth

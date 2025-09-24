@@ -1,18 +1,13 @@
 import numpy as np
 import scipy.sparse as sp
 import functools
-from typing import overload, Set, Tuple
 from networkx import MultiDiGraph
 from collections.abc import Iterable
-from pyformlang.finite_automaton import (
-    NondeterministicFiniteAutomaton,
-    Symbol
-)
+from pyformlang.finite_automaton import NondeterministicFiniteAutomaton, Symbol
 from project import t2_fa_utils as t2
 
 
 class AdjacencyMatrixFA:
-
     n_states: int
     """Number of states in the automaton"""
 
@@ -45,7 +40,9 @@ class AdjacencyMatrixFA:
             if edges:
                 rows, cols = zip(*edges)
                 data = np.ones(len(edges), dtype=bool)
-                mat = sp.csr_matrix((data, (rows, cols)), shape=(self.n_states, self.n_states))
+                mat = sp.csr_matrix(
+                    (data, (rows, cols)), shape=(self.n_states, self.n_states)
+                )
             else:
                 mat = sp.csr_matrix((self.n_states, self.n_states), dtype=bool)
             self.transitions[a] = mat
@@ -67,7 +64,7 @@ class AdjacencyMatrixFA:
         alphabet,
         transitions: dict,
         start_states: np.ndarray,
-        final_states: np.ndarray
+        final_states: np.ndarray,
     ):
         obj = cls.__new__(cls)
         obj.n_states = n_states
@@ -91,7 +88,7 @@ class AdjacencyMatrixFA:
         else:
             adj_matrix = sp.csr_matrix((n, n), dtype=bool)
 
-        adj_matrix = adj_matrix + sp.identity(n, dtype=bool, format='csr')
+        adj_matrix = adj_matrix + sp.identity(n, dtype=bool, format="csr")
 
         result = adj_matrix.copy()
         for _ in range(n - 1):
@@ -138,8 +135,7 @@ class AdjacencyMatrixFA:
 
 
 def intersect_automata(
-        automaton1: AdjacencyMatrixFA,
-        automaton2: AdjacencyMatrixFA
+    automaton1: AdjacencyMatrixFA, automaton2: AdjacencyMatrixFA
 ) -> AdjacencyMatrixFA:
     total_alph = automaton1.alphabet & automaton2.alphabet
     n = automaton1.n_states * automaton2.n_states
@@ -147,35 +143,25 @@ def intersect_automata(
     total_transitions = {}
     for sym in total_alph:
         total_transitions[sym] = sp.kron(
-            automaton1.transitions[sym],
-            automaton2.transitions[sym],
-            format="csr"
+            automaton1.transitions[sym], automaton2.transitions[sym], format="csr"
         )
 
     total_ss = np.kron(
-        automaton1.start_states.astype(int),
-        automaton2.start_states.astype(int)
+        automaton1.start_states.astype(int), automaton2.start_states.astype(int)
     ).astype(bool)
 
     total_fs = np.kron(
-        automaton1.final_states.astype(int),
-        automaton2.final_states.astype(int)
+        automaton1.final_states.astype(int), automaton2.final_states.astype(int)
     ).astype(bool)
 
     return AdjacencyMatrixFA.from_components(
-        n,
-        total_alph,
-        total_transitions,
-        total_ss,
-        total_fs
+        n, total_alph, total_transitions, total_ss, total_fs
     )
-def tensor_based_rpq(
-    regex: str,
-    graph: MultiDiGraph,
-    start_nodes: set[int],
-    final_nodes: set[int]
-) -> set[tuple[int, int]]:
 
+
+def tensor_based_rpq(
+    regex: str, graph: MultiDiGraph, start_nodes: set[int], final_nodes: set[int]
+) -> set[tuple[int, int]]:
     g_nfa = t2.graph_to_nfa(graph, start_nodes, final_nodes)
     g_amfa = AdjacencyMatrixFA(g_nfa)
 
