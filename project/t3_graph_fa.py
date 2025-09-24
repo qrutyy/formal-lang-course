@@ -1,15 +1,32 @@
 import numpy as np
 import scipy.sparse as sp
 import functools
-from typing import overload
+from typing import overload, Set, Tuple
+from networkx import MultiDiGraph
 from collections.abc import Iterable
 from pyformlang.finite_automaton import (
     NondeterministicFiniteAutomaton,
     Symbol
 )
+from project import t2_fa_utils as t2
 
 
 class AdjacencyMatrixFA:
+
+    n_states: int
+    """Number of states in the automaton"""
+
+    transitions: dict[Symbol, sp.csr_matrix]
+    """Dictionary mapping symbols to sparse adjacency matrices (CSR)"""
+
+    start_states: np.ndarray
+    """Boolean vector marking start states"""
+
+    final_states: np.ndarray
+    """Boolean vector marking final states"""
+
+    alphabet: set[Symbol]
+    """Alphabet of the automaton"""
 
     def __init__(self, nfa: NondeterministicFiniteAutomaton):
         states = list(nfa.states)
@@ -111,13 +128,10 @@ class AdjacencyMatrixFA:
 
         start_indices = np.where(self.start_states)[0]
         final_indices = np.where(self.final_states)[0]
-        print(start_indices, final_indices)
-        print(tr_cl)
 
         for i in start_indices:
             for j in final_indices:
                 if tr_cl[i, j]:
-                    print(i, j)
                     return False
 
         return True
@@ -155,3 +169,40 @@ def intersect_automata(
         total_ss,
         total_fs
     )
+def tensor_based_rpq(
+    regex: str,
+    graph: MultiDiGraph,
+    start_nodes: set[int],
+    final_nodes: set[int]
+) -> set[tuple[int, int]]:
+
+    g_nfa = t2.graph_to_nfa(graph, start_nodes, final_nodes)
+    g_amfa = AdjacencyMatrixFA(g_nfa)
+
+    r_dfa = t2.regex_to_dfa(regex)
+    r_amfa = AdjacencyMatrixFA(r_dfa)
+
+    # get only paths we need (mutual)
+    i_amfa = intersect_automata(g_amfa, r_amfa)
+
+    # get reachability
+    tr = i_amfa.transitive_closure()
+
+    prod_starts = np.where(i_amfa.start_states)[0]
+    prod_finals = np.where(i_amfa.final_states)[0]
+
+    g_states = list(g_nfa.states)
+    r_n = r_amfa.n_states
+
+    result: set[tuple[int, int]] = set()
+
+    for p in prod_starts:
+        for q in prod_finals:
+            if tr[p, q]:
+                g_p_idx = p // r_n
+                g_q_idx = q // r_n
+                u = g_states[g_p_idx]
+                v = g_states[g_q_idx]
+                result.add((u, v))
+
+    return result
