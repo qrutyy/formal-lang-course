@@ -52,7 +52,7 @@ def make_random_nfa(alphabet, n_states, start_states_num, final_states_num, tran
 
 def test_from_pyformlang_nfa():
     nfa = make_simple_nfa(True)
-    fa = t3.AdjacencyMatrixFA.from_nfa(nfa)
+    fa = t3.AdjacencyMatrixFA(nfa)
 
     assert fa.n_states == 2
 
@@ -76,13 +76,13 @@ def test_from_pyformlang_nfa():
     (make_random_nfa(["a"], 1, 1, 1, 1), False)
 ])
 def test_am_emptyness(nfa, is_empty_truth):
-    fa = t3.AdjacencyMatrixFA.from_nfa(nfa)
+    fa = t3.AdjacencyMatrixFA(nfa)
     assert fa.is_empty() == is_empty_truth
 
 
 def test_accepts_simple_words():
     nfa = make_simple_nfa(True)
-    fa = t3.AdjacencyMatrixFA.from_nfa(nfa)
+    fa = t3.AdjacencyMatrixFA(nfa)
 
     a, b = Symbol("a"), Symbol("b")
 
@@ -95,7 +95,7 @@ def test_accepts_simple_words():
 
 def test_accepts_with_cycle():
     nfa = make_simple_nfa(True)
-    fa = t3.AdjacencyMatrixFA.from_nfa(nfa)
+    fa = t3.AdjacencyMatrixFA(nfa)
 
     a, b = Symbol("a"), Symbol("b")
 
@@ -108,7 +108,7 @@ def test_accepts_with_cycle():
 
 def test_accepts_empty_nfa():
     nfa = make_simple_nfa(False)
-    fa = t3.AdjacencyMatrixFA.from_nfa(nfa)
+    fa = t3.AdjacencyMatrixFA(nfa)
 
     a, b = Symbol("a"), Symbol("b")
     assert fa.accepts([a]) is False
