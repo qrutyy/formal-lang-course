@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.sparse as sp
 import functools
+from typing import overload
 from collections.abc import Iterable
 from pyformlang.finite_automaton import (
     NondeterministicFiniteAutomaton,
@@ -9,30 +10,11 @@ from pyformlang.finite_automaton import (
 
 
 class AdjacencyMatrixFA:
-    def __init__(self,
-                 n_states: int,
-                 alphabet,
-                 transitions: dict,
-                 start_states: np.ndarray,
-                 final_states: np.ndarray):
-        """
-        n_states: number of states
-        alphabet: set of symbols
-        transitions: dict[Symbol, sp.csr_matrix] — boolean adjacency matrices
-        start_states: np.ndarray[bool] of length n_states
-        final_states: np.ndarray[bool] of length n_states
-        """
-        self.n_states = n_states
-        self.alphabet = list(alphabet)
-        self.transitions = transitions
-        self.start_states = start_states
-        self.final_states = final_states
 
-    @classmethod
-    def from_nfa(cls, nfa: NondeterministicFiniteAutomaton):
+    def __init__(self, nfa: NondeterministicFiniteAutomaton):
         states = list(nfa.states)
         index = {s: i for i, s in enumerate(states)}
-        n = len(states)
+        self.n_states = len(states)
 
         transitions = {a: [] for a in nfa.symbols}
 
@@ -41,25 +23,42 @@ class AdjacencyMatrixFA:
             j = index[s_to]
             transitions[symb].append((i, j))
 
-        matrices = {}
+        self.transitions = {}
         for a, edges in transitions.items():
             if edges:
                 rows, cols = zip(*edges)
                 data = np.ones(len(edges), dtype=bool)
-                mat = sp.csr_matrix((data, (rows, cols)), shape=(n, n))
+                mat = sp.csr_matrix((data, (rows, cols)), shape=(self.n_states, self.n_states))
             else:
-                mat = sp.csr_matrix((n, n), dtype=bool)
-            matrices[a] = mat
+                mat = sp.csr_matrix((self.n_states, self.n_states), dtype=bool)
+            self.transitions[a] = mat
 
-        start_states = np.zeros(n, dtype=bool)
+        self.start_states = np.zeros(self.n_states, dtype=bool)
         for s in nfa.start_states:
-            start_states[index[s]] = True
+            self.start_states[index[s]] = True
 
-        final_states = np.zeros(n, dtype=bool)
+        self.final_states = np.zeros(self.n_states, dtype=bool)
         for s in nfa.final_states:
-            final_states[index[s]] = True
+            self.final_states[index[s]] = True
 
-        return cls(n, nfa.symbols, matrices, start_states, final_states)
+        self.alphabet = nfa.symbols
+
+    @classmethod
+    def from_components(
+        cls,
+        n_states: int,
+        alphabet,
+        transitions: dict,
+        start_states: np.ndarray,
+        final_states: np.ndarray
+    ):
+        obj = cls.__new__(cls)
+        obj.n_states = n_states
+        obj.alphabet = set(alphabet)
+        obj.transitions = transitions
+        obj.start_states = start_states
+        obj.final_states = final_states
+        return obj
 
     def transitive_closure(self) -> sp.csc_matrix:
         """
@@ -122,3 +121,37 @@ class AdjacencyMatrixFA:
                     return False
 
         return True
+
+
+def intersect_automata(
+        automaton1: AdjacencyMatrixFA,
+        automaton2: AdjacencyMatrixFA
+) -> AdjacencyMatrixFA:
+    total_alph = automaton1.alphabet & automaton2.alphabet
+    n = automaton1.n_states * automaton2.n_states
+
+    total_transitions = {}
+    for sym in total_alph:
+        total_transitions[sym] = sp.kron(
+            automaton1.transitions[sym],
+            automaton2.transitions[sym],
+            format="csr"
+        )
+
+    total_ss = np.kron(
+        automaton1.start_states.astype(int),
+        automaton2.start_states.astype(int)
+    ).astype(bool)
+
+    total_fs = np.kron(
+        automaton1.final_states.astype(int),
+        automaton2.final_states.astype(int)
+    ).astype(bool)
+
+    return AdjacencyMatrixFA.from_components(
+        n,
+        total_alph,
+        total_transitions,
+        total_ss,
+        total_fs
+    )
