@@ -5,6 +5,7 @@ from project import t4_ms_bfs_rpq as t4
 
 DATASET_DIR = pathlib.Path(__file__).parent / "datasets"
 
+
 @pytest.mark.parametrize(
     "filename, regex, start_nodes, final_nodes, exp_result",
     [
@@ -12,10 +13,10 @@ DATASET_DIR = pathlib.Path(__file__).parent / "datasets"
         ("regular_graph_1.csv", "a.b.c", {0}, {2}, set()),
         ("regular_graph_1.csv", "a", {0}, {2}, set()),
         ("regular_graph_1.csv", "a", {0}, {1}, {(0, 1)}),
-        ("regular_graph_2.csv", "(x|y|z)*", {0, 1, 2}, {3}, {(0,3), (1,3), (2,3)}),
-        ("regular_graph_2.csv", "x.y", {0, 1, 2}, {3}, {(0,3)}),
-        ("regular_graph_2.csv", "x(y|x)*", {0,3}, {3}, {(0,3), (3,3)}),
-    ]
+        ("regular_graph_2.csv", "(x|y|z)*", {0, 1, 2}, {3}, {(0, 3), (1, 3), (2, 3)}),
+        ("regular_graph_2.csv", "x.y", {0, 1, 2}, {3}, {(0, 3)}),
+        ("regular_graph_2.csv", "x(y|x)*", {0, 3}, {3}, {(0, 3), (3, 3)}),
+    ],
 )
 def test_simple_graphs(filename, regex, start_nodes, final_nodes, exp_result):
     filepath = str(DATASET_DIR / filename)
