@@ -29,7 +29,7 @@ DATASET_DIR = pathlib.Path(__file__).parent.parent / "tests/datasets"
             {2},  # No path from 0 to 2
             set(),
         ),
-        ("regular_graph4.csv", "S -> a", {0}, {1}, set()),
+        ("regular_graph4.csv", "S -> a", {0}, {1}, {(0, 1)}),
         # Test 3: equivalent to regex "(x|y|z)*"
         # The grammar S -> x S | y S | z S | epsilon generates zero or more x, y, or z
         # Graph: 0--x-->3, 1--y-->3, 2--z-->3, 3--x-->3
