@@ -41,7 +41,7 @@ def ms_bfs_based_rpq(
         if symbol in reg_am.transitions:
             permutation_matrices[symbol] = reg_am.transitions[symbol].transpose()
 
-    while front.nnz > 0:
+    while front.count_nonzero() > 0:
         symbol_fronts = []
 
         for symbol in new_alphabet:
