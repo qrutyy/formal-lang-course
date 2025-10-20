@@ -13,68 +13,47 @@ DATASET_DIR = pathlib.Path(__file__).parent.parent / "tests/datasets"
     [
         # Test 1: Simple sequential grammar (equivalent to regex "a.b.c")
         # Graph: 0 --a--> 1 --b--> 0 --c--> 0
-        (
-            "regular_graph4.csv",
-            "S -> abc",
-            {0},
-            {0},
-            set()
-        ),
+        ("regular_graph4.csv", "S -> abc", {0}, {0}, set()),
         (
             "regular_graph4.csv",
             "S -> a b c",
             {0},
-            {2}, # Node 2 does not exist
-            set()
+            {2},  # Node 2 does not exist
+            set(),
         ),
-
         # Test 2: Simple terminal grammar (equivalent to regex "a")
         (
             "regular_graph4.csv",
             "S -> a",
             {0},
-            {2}, # No path from 0 to 2
-            set()
+            {2},  # No path from 0 to 2
+            set(),
         ),
-        (
-            "regular_graph4.csv",
-            "S -> a",
-            {0},
-            {1},
-            set()
-        ),
-
+        ("regular_graph4.csv", "S -> a", {0}, {1}, set()),
         # Test 3: equivalent to regex "(x|y|z)*"
         # The grammar S -> x S | y S | z S | epsilon generates zero or more x, y, or z
         # Graph: 0--x-->3, 1--y-->3, 2--z-->3, 3--x-->3
         (
             "regular_graph5.csv",
-            "S -> x S | y S | z S |", # The trailing '|' means epsilon
+            "S -> x S | y S | z S |",  # The trailing '|' means epsilon
             {0, 1, 2},
             {3},
-            {(0, 3), (1, 3), (2, 3)}
+            {(0, 3), (1, 3), (2, 3)},
         ),
         # A simple path from 0 to 3 via x is found.
         # A simple path from 3 to 3 via x is found.
         # Thus, a path 0 -> 3 -> 3 should be found for grammar "S -> x S", S->x
-        (
-            "regular_graph5.csv",
-            "S -> x S | x",
-            {0, 3},
-            {3},
-            {(0, 3), (3, 3)}
-        ),
-
+        ("regular_graph5.csv", "S -> x S | x", {0, 3}, {3}, {(0, 3), (3, 3)}),
         # Test 4: A true Context-Free Grammar (Dyck language a^n b^n)
         # This cannot be expressed with a regular expression.
         # Graph: 0--a-->1--a-->2--b-->3--b-->4
         (
             "regular_graph6.csv",
-            "S -> a S b |", # Recognizes a^n b^n
+            "S -> a S b |",  # Recognizes a^n b^n
             {0},
             {4},
             # Path 0->1->2->3->4 gives "aabb", which is in the language
-            {(0, 4)}
+            {(0, 4)},
         ),
         (
             "regular_graph6.csv",
@@ -82,7 +61,7 @@ DATASET_DIR = pathlib.Path(__file__).parent.parent / "tests/datasets"
             {1},
             {3},
             # Path 1->2->3 gives "ab", which is in the language
-            {(1, 3)}
+            {(1, 3)},
         ),
         (
             "regular_graph6.csv",
@@ -90,7 +69,7 @@ DATASET_DIR = pathlib.Path(__file__).parent.parent / "tests/datasets"
             {0},
             {3},
             # Path 0->1->2->3 gives "aab", which is NOT in the language
-            set()
+            set(),
         ),
         (
             "regular_graph6.csv",
@@ -102,9 +81,12 @@ DATASET_DIR = pathlib.Path(__file__).parent.parent / "tests/datasets"
             # S -> a S b with S->epsilon gives (1,3) for path "ab"
             # S -> a S b with S->a S b->ab gives (0,4) for path "aabb"
             {
-                (0, 0), (1, 1), (2, 2), (3, 3), # From epsilon productions
-                (1, 3), # For path "ab"
-            }
+                (0, 0),
+                (1, 1),
+                (2, 2),
+                (3, 3),  # From epsilon productions
+                (1, 3),  # For path "ab"
+            },
         ),
     ],
 )

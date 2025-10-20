@@ -28,6 +28,8 @@ def refactor_long_productions(cfg):
         new_productions.add(Production(head, body))
 
     return CFG(start_symbol=cfg.start_symbol, productions=new_productions)
+
+
 def remove_e_productions(cfg: CFG) -> CFG:
     """
     Eliminates epsilon-productions from a CFG.
@@ -63,6 +65,7 @@ def remove_e_productions(cfg: CFG) -> CFG:
 
     return CFG(start_symbol=cfg.start_symbol, productions=new_productions)
 
+
 def get_terminal_mapping(cfg: CFG):
     """Find variables that deterministically reduce to a single terminal."""
     mapping = {}
@@ -90,12 +93,17 @@ def get_terminal_mapping(cfg: CFG):
 
     return mapping
 
+
 def remove_unit_productions(cfg: CFG) -> CFG:
     """
     Eliminates unit productions (A -> B) from a CFG.
     """
     # find all pairs (A, B) such that A ->* B via unit productions.
-    unit_pairs = {(p.head, p.body[0]) for p in cfg.productions if len(p.body) == 1 and isinstance(p.body[0], Variable)}
+    unit_pairs = {
+        (p.head, p.body[0])
+        for p in cfg.productions
+        if len(p.body) == 1 and isinstance(p.body[0], Variable)
+    }
 
     while True:
         new_pairs = {(A, C) for A, B1 in unit_pairs for B2, C in unit_pairs if B1 == B2}
@@ -111,11 +119,14 @@ def remove_unit_productions(cfg: CFG) -> CFG:
     for A, B in unit_pairs:
         # for each pair (A, B) and each original non-unit production B -> body...
         for p in cfg.productions:
-            if p.head == B and not (len(p.body) == 1 and isinstance(p.body[0], Variable)):
+            if p.head == B and not (
+                len(p.body) == 1 and isinstance(p.body[0], Variable)
+            ):
                 # ...add a new production A -> body.
                 new_productions.add(Production(A, p.body))
 
     return CFG(start_symbol=cfg.start_symbol, productions=new_productions)
+
 
 def remove_nonproductive(cfg: CFG) -> CFG:
     productive = set()
@@ -269,9 +280,11 @@ def hellings_based_cfpq(
 
     result = set()
     for var, start_node, final_node in r:
-        if (var == cfg.start_symbol and
-            start_node in start_nodes and
-            final_node in final_nodes):
+        if (
+            var == cfg.start_symbol
+            and start_node in start_nodes
+            and final_node in final_nodes
+        ):
             result.add((start_node, final_node))
 
     return result
