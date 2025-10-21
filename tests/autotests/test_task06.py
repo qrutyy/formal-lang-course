@@ -7,8 +7,9 @@ from grammars_constants import REGEXP_CFG, GRAMMARS
 from rpq_template_test import rpq_cfpq_test, different_grammars_test
 from cfpq_concrete_cases import CaseCFPQ, CASES_CFPQ
 
+# Fix import statements in try block to run tests
 try:
-    from project.t6_cfg_actions import hellings_based_cfpq
+    from project.task6 import hellings_based_cfpq
 except ImportError:
     pytestmark = pytest.mark.skip("Task 6 is not ready to test!")
 
@@ -29,8 +30,8 @@ class TestHellingBasedCFPQ:
 
 def test_cfg_to_weak_normal_form_exists():
     try:
-        import project.t6_cfg_actions
+        import project.task6
 
-        assert "cfg_to_weak_normal_form" in dir(project.t6_cfg_actions)
+        assert "cfg_to_weak_normal_form" in dir(project.task6)
     except NameError:
         assert False
