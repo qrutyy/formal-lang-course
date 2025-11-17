@@ -72,7 +72,7 @@ def matrix_based_cfpq(
             after = MA.nnz
             if after > before:
                 changed = True
-                matrices[A] = MA.todok()  # сохранить для следующей итерации
+                matrices[A] = MA.todok()  # save for next iteration
 
     # prepare start and final nodes
     if start_nodes is None or len(start_nodes) == 0:
