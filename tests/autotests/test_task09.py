@@ -13,9 +13,8 @@ from rpq_template_test import (
 )
 from cfpq_concrete_cases import CaseCFPQ, CASES_CFPQ
 
-# Fix import statements in try block to run tests
 try:
-    from project.task6 import hellings_based_cfpq
+    from project.t6_cfg_actions import hellings_based_cfpq
     from project.task7 import matrix_based_cfpq
     from project.task8 import tensor_based_cfpq, cfg_to_rsm, ebnf_to_rsm
     from project.task9 import gll_based_cfpq
