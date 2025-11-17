@@ -56,7 +56,11 @@ def matrix_based_cfpq(
         for i in range(n):
             mat[i, i] = True
 
-    var_prods_filtered = [(A, B, C) for (A, B, C) in var_prods if A in matrices and B in matrices and C in matrices]
+    var_prods_filtered = [
+        (A, B, C)
+        for (A, B, C) in var_prods
+        if A in matrices and B in matrices and C in matrices
+    ]
     changed = True
     while changed:
         changed = False
