@@ -17,6 +17,11 @@ def matrix_based_cfpq(
     Returns (u, v) pairs if there exists a path from u to v within graph G.
     """
 
+    node_to_idx = {node: idx for idx, node in enumerate(graph.nodes)}
+    idx_to_node = {idx: node for node, idx in node_to_idx.items()}
+    n = len(node_to_idx)
+    if n == 0:
+        return set()
 
     wcnf = t6.cfg_to_weak_normal_form(cfg)
     eps_prods = {p.head for p in wcnf.productions if len(p.body) == 0}
@@ -77,7 +82,6 @@ def matrix_based_cfpq(
     start_indices = {node_to_idx[u] for u in start_nodes if u in node_to_idx}
     final_indices = {node_to_idx[v] for v in final_nodes if v in node_to_idx}
 
-    # 5) Сбор результата
     result = set()
     S = wcnf.start_symbol
     if S not in matrices:
