@@ -1,6 +1,6 @@
 import networkx as nx
 from typing import Set, Tuple
-from scipy.sparse import dok_matrix, csr_matrix
+from scipy.sparse import dok_matrix
 import pyformlang.cfg
 from pyformlang.cfg import Terminal
 from project import t6_cfg_actions as t6
