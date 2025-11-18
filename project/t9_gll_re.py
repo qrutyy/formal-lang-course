@@ -6,9 +6,6 @@ from pyformlang.finite_automaton import DeterministicFiniteAutomaton
 
 LABEL_NAME = "label"
 
-# -----------------------------
-# GSS and SPPF data structures
-# -----------------------------
 class GSSNode:
     def __init__(self, state: Tuple[Symbol, str], node: int):
         self.state = state
@@ -47,9 +44,6 @@ class GSStack:
         return self.body[key]
 
 
-# -----------------------------
-# RSM functional helpers
-# -----------------------------
 def init_graph_edges(graph: nx.DiGraph):
     nodes2edges: Dict[int, Dict[Symbol, Set[int]]] = {}
     for n in graph.nodes:
@@ -89,9 +83,6 @@ def init_rsm_data(rsm: RecursiveAutomaton):
     return rsmstate2data, start_rstate
 
 
-# -----------------------------
-# Core GLL solver functions
-# -----------------------------
 def add_sppf_nodes(unprocessed, added, nodes):
     nodes.difference_update(added)
     added.update(nodes)
@@ -103,13 +94,11 @@ def gll_step(sppfnode, nodes2edges, rsmstate2data, gss):
     rsm_dat = rsmstate2data[rsm_st[0]][rsm_st[1]]
     reach_set = set()
 
-    # Terminal steps
     for term, rsm_new_st in rsm_dat["term_edges"].items():
         if term in nodes2edges[gnode]:
             for gn in nodes2edges[gnode][term]:
                 unprocessed.add((gssn, rsm_new_st, gn))
 
-    # Variable steps
     for var, (var_start_rsm_st, ret_rsm_st) in rsm_dat["var_edges"].items():
         inner_gss_node = gss.get_node(var_start_rsm_st, gnode)
         post_pop_nodes = inner_gss_node.add_edge(ret_rsm_st, gssn)
@@ -120,7 +109,6 @@ def gll_step(sppfnode, nodes2edges, rsmstate2data, gss):
 
         unprocessed.add((inner_gss_node, var_start_rsm_st, gnode))
 
-    # Pop step
     if rsm_dat["is_final"]:
         for pop_node in gssn.pop(gnode):
             gssn_pop, ret_st, node = pop_node
@@ -132,9 +120,6 @@ def gll_step(sppfnode, nodes2edges, rsmstate2data, gss):
     return reach_set
 
 
-# -----------------------------
-# Public API
-# -----------------------------
 def gll_based_cfpq(
     rsm: RecursiveAutomaton,
     graph: nx.DiGraph,
@@ -158,16 +143,13 @@ def gll_based_cfpq(
     added: Set[Tuple[GSSNode, Tuple[Symbol, str], int]] = set()
     reach_set: Set[Tuple[int, int]] = set()
 
-    # Initialize starting nodes
     for sn in start_nodes:
         gssn = gss.get_node(start_rstate, sn)
         gssn.add_edge(("$", "fin"), accept_gssnode)
         unprocessed.add((gssn, start_rstate, sn))
 
-    # Main loop
     while unprocessed:
         node = unprocessed.pop()
         reach_set.update(gll_step(node, nodes2edges, rsmstate2data, gss))
 
-    # Filter by final nodes
     return {(s, f) for (s, f) in reach_set if f in final_nodes}

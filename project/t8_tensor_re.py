@@ -1,163 +1,163 @@
 import networkx as nx
-import scipy.sparse as sp
 from pyformlang.cfg import CFG
 from pyformlang.rsa import RecursiveAutomaton, Box
 from pyformlang.finite_automaton import State, NondeterministicFiniteAutomaton
-from project.task2 import graph_to_nfa
-from project.task3 import AdjacencyMatrixFA, intersect_automata
+from project.t2_fa_utils import graph_to_nfa
+from project.t3_graph_fa import AdjacencyMatrixFA, intersect_automata
+import scipy.sparse as scsp
+import numpy as np
 
-
-# -----------------------------
-# Grammar-to-RSM transformations
-# -----------------------------
 def cfg_to_rsm(cfg: CFG) -> RecursiveAutomaton:
-    """
-    Convert a CFG to an RSM using textual representation.
-    """
+    """Converts a CFG to a Recursive State Machine."""
     return RecursiveAutomaton.from_text(cfg.to_text())
 
 
 def ebnf_to_rsm(ebnf: str) -> RecursiveAutomaton:
-    """
-    Convert an EBNF string to an RSM.
-    """
+    """Converts an EBNF string to a Recursive State Machine."""
     return RecursiveAutomaton.from_text(ebnf)
 
 
-def build_rsm_as_nfa(rsm: RecursiveAutomaton) -> NondeterministicFiniteAutomaton:
+def _build_rsm_fa(rsm: RecursiveAutomaton) -> NondeterministicFiniteAutomaton:
+    """Builds a single NFA representation from an RSM."""
+    rsm_nfa = NondeterministicFiniteAutomaton()
+    for sym, box in rsm.boxes.items():
+        # add all transitions, renaming states to be unique (Symbol, State) tuples
+        for s_from, trans in box.dfa.to_dict().items():
+            for label, s_to in trans.items():
+                rsm_nfa.add_transition(State((sym, s_from.value)), label, State((sym, s_to.value)))
+
+        for start_state in box.start_state:
+            rsm_nfa.add_start_state(State((sym, start_state.value)))
+        for final_state in box.final_states:
+            rsm_nfa.add_final_state(State((sym, final_state.value)))
+
+    return rsm_nfa
+
+
+def _define_start_states(
+    intersection: AdjacencyMatrixFA, adj_rsm: AdjacencyMatrixFA
+) -> set[State]:
+    """Finds the start states in the intersection based on the RSM's start states."""
+    rsm_starts = {adj_rsm.state_of_index[i] for i in np.where(adj_rsm.start_states)[0]}
+    res = set()
+    for st in intersection.states:
+        # intersection state value is a tuple: (graph_state_val, rsm_state_val)
+        _, rsm_st_val = st.value
+        if State(rsm_st_val) in rsm_starts:
+            res.add(st)
+    return res
+
+
+def _ms_bfs_with_paths(intersection: AdjacencyMatrixFA, adj_rsm: AdjacencyMatrixFA):
     """
-    Unfold all RSM boxes into a single NFA with unique states.
+    Performs a matrix-based Breadth-First Search to find reachability
+    from the RSM's start states within the intersection automaton.
     """
-    transitions = []
-    start_states = set()
-    final_states = set()
+    n = intersection.n_states
+    if n == 0:
+        return scsp.csr_matrix((0, 0), dtype=bool)
 
-    for sym in rsm.boxes:
-        box: Box = rsm.get_box(sym)
-        nx_graph = box.dfa.to_networkx()
-        for u, v, data in nx_graph.edges(data=True):
-            lbl = data.get("label")
-            transitions.append((State((sym, u)), lbl, State((sym, v))))
-        for s in box.start_state:
-            start_states.add(State((sym, s.value)))
-        for f in box.final_states:
-            final_states.add(State((sym, f.value)))
+    reachability = scsp.lil_matrix((n, n), dtype=bool)
+    start_states = _define_start_states(intersection, adj_rsm)
+    for s in start_states:
+        i = intersection.index_of_state[s]
+        reachability[i, i] = True
+    reachability = reachability.tocsr()
 
-    nfa = NondeterministicFiniteAutomaton(start_states, final_states)
-    nfa.add_transitions(transitions)
-    return nfa
+    prev_nnz = -1
+    while reachability.nnz != prev_nnz:
+        prev_nnz = reachability.nnz
+        for mat in intersection.transitions.values():
+            reachability += reachability @ mat
+
+    return reachability
 
 
-# -----------------------------
-# Core tensor-based CFPQ algorithm
-# -----------------------------
+def _add_nonterms(
+    reachability: scsp.spmatrix,
+    adj_graph: AdjacencyMatrixFA,
+    adj_rsm: AdjacencyMatrixFA,
+    intersection: AdjacencyMatrixFA,
+) -> bool:
+    """Adds new edges to the graph automaton for each completed non-terminal path."""
+    new_info_added = False
+
+    rsm_starts = {adj_rsm.state_of_index[i] for i in np.where(adj_rsm.start_states)[0]}
+    rsm_finals = {adj_rsm.state_of_index[i] for i in np.where(adj_rsm.final_states)[0]}
+
+    reach_coo = reachability.tocoo()
+    for i, j in zip(reach_coo.row, reach_coo.col):
+        inter_start = intersection.state_of_index[i]
+        inter_end = intersection.state_of_index[j]
+
+        gr_start_val, rsm_start_val = inter_start.value
+        gr_end_val, rsm_end_val = inter_end.value
+
+        rsm_start_state = State(rsm_start_val)
+        rsm_end_state = State(rsm_end_val)
+
+        # check if the path corresponds to a full non-terminal production (S ->* w)
+        if rsm_start_state in rsm_starts and rsm_end_state in rsm_finals:
+            start_symbol, _ = rsm_start_val
+            end_symbol, _ = rsm_end_val
+
+            if start_symbol == end_symbol:
+                non_terminal = start_symbol
+
+                i_graph = adj_graph.index_of_state[State(gr_start_val)]
+                j_graph = adj_graph.index_of_state[State(gr_end_val)]
+
+                if non_terminal not in adj_graph.transitions:
+                    adj_graph.transitions[non_terminal] = scsp.lil_matrix((adj_graph.n_states, adj_graph.n_states), dtype=bool)
+                    adj_graph.alphabet.add(non_terminal)
+
+                if not adj_graph.transitions[non_terminal][i_graph, j_graph]:
+                    adj_graph.transitions[non_terminal][i_graph, j_graph] = True
+                    new_info_added = True
+
+    return new_info_added
+
+
 def tensor_based_cfpq(
     rsm: RecursiveAutomaton,
     graph: nx.DiGraph,
     start_nodes: set[int] = None,
     final_nodes: set[int] = None,
-    matrix_format: str = "csr",
+    matrix_format="csr",
 ) -> set[tuple[int, int]]:
     """
-    Compute all pairs reachability for a graph with context-free constraints using
-    the tensor (Kronecker) product algorithm.
+    Performs context-free path querying using the tensor-based algorithm.
     """
-    # Convert graph to NFA
-    fa_graph = graph_to_nfa(graph, start_nodes, final_nodes)
-    adj_graph = AdjacencyMatrixFA(fa_graph, matrix_format=matrix_format)
+    graph_nfa = graph_to_nfa(graph, start_nodes, final_nodes)
+    adj_graph = AdjacencyMatrixFA(graph_nfa, matrix_format=matrix_format)
+    rsm_fa = _build_rsm_fa(rsm)
+    adj_rsm = AdjacencyMatrixFA(rsm_fa, matrix_format=matrix_format)
 
-    # Convert RSM to NFA and adjacency-matrix representation
-    fa_rsm = build_rsm_as_nfa(rsm)
-    adj_rsm = AdjacencyMatrixFA(fa_rsm, matrix_format=matrix_format)
+    info_added = True
+    while info_added:
+        # convert LIL matrices to CSR for efficient multiplication in the next intersection
+        for label in adj_graph.transitions:
+            adj_graph.transitions[label] = adj_graph.transitions[label].tocsr()
 
-    updated = True
-    while updated:
-        updated = False
-
-        # Compute intersection of graph NFA and RSM NFA
         intersection = intersect_automata(adj_graph, adj_rsm)
+        if intersection.n_states == 0:
+            break
 
-        # Compute reachability using boolean matrix multiplication
-        reach_matrix = _compute_reachability(intersection, adj_rsm)
+        reachability = _ms_bfs_with_paths(intersection, adj_rsm)
+        info_added = _add_nonterms(reachability, adj_graph, adj_rsm, intersection)
 
-        # Propagate new nonterminals back to the graph
-        adj_graph, added = _propagate_nonterminals(reach_matrix, adj_graph, adj_rsm, intersection)
-        updated = updated or added
-
-    # Extract result pairs from the graph's adjacency matrices
     result = set()
-    if rsm.initial_label in adj_graph.boolean_decompress:
-        mat = adj_graph.boolean_decompress[rsm.initial_label]
-        rows, cols = mat.nonzero()
-        for i, j in zip(rows, cols):
-            src = adj_graph.state_of_index[i]
-            tgt = adj_graph.state_of_index[j]
-            if (not start_nodes or src in start_nodes) and (not final_nodes or tgt in final_nodes):
-                result.add((src, tgt))
+    initial_symbol = rsm.initial_label
+    if initial_symbol in adj_graph.transitions:
+        mat = adj_graph.transitions[initial_symbol].tocoo()
+        for i, j in zip(mat.row, mat.col):
+            s = adj_graph.state_of_index[i]
+            f = adj_graph.state_of_index[j]
+
+            is_start_node = not start_nodes or s.value in start_nodes
+            is_final_node = not final_nodes or f.value in final_nodes
+
+            if is_start_node and is_final_node:
+                result.add((s.value, f.value))
+
     return result
-
-
-# -----------------------------
-# Helper functions
-# -----------------------------
-def _compute_reachability(intersection: AdjacencyMatrixFA, adj_rsm: AdjacencyMatrixFA):
-    """
-    Perform boolean matrix multiplication to compute all reachable pairs
-    in the intersection automaton.
-    """
-    n = len(intersection.states)
-    mat_type = getattr(sp, f"{intersection.matrix_format}_matrix", sp.csr_matrix)
-    reach = mat_type((n, n), dtype=bool)
-
-    # Identify initial states corresponding to RSM starts
-    starts = [s for s in intersection.states if s.value[1] in adj_rsm.start_states]
-    for st in starts:
-        idx = intersection.index_of_state[st]
-        reach[idx, idx] = True
-
-    # Iteratively update reachability until no new pairs are added
-    changed = True
-    while changed:
-        changed = False
-        for sym, mat in intersection.boolean_decompress.items():
-            new_reach = reach @ mat
-            delta = new_reach > reach
-            if delta.count_nonzero() > 0:
-                reach += new_reach
-                changed = True
-    return reach
-
-
-def _propagate_nonterminals(reach: sp.spmatrix, adj_graph: AdjacencyMatrixFA, adj_rsm: AdjacencyMatrixFA, intersection: AdjacencyMatrixFA):
-    """
-    Update the graph's adjacency matrices with new nonterminal edges
-    based on the reachability matrix.
-    """
-    updated = False
-    rows, cols = reach.nonzero()
-
-    for i, j in zip(rows, cols):
-        gr_s, rsm_s = intersection.state_of_index[i].value
-        gr_f, rsm_f = intersection.state_of_index[j].value
-
-        box_start, _ = rsm_s.value
-        box_end, _ = rsm_f.value
-
-        # Only propagate edges if start and end of RSM box match and they are start/final states
-        if box_start == box_end and rsm_s in adj_rsm.start_states and rsm_f in adj_rsm.final_states:
-            if box_start not in adj_graph.boolean_decompress:
-                n = len(adj_graph.states)
-                mat_type = getattr(sp, f"{adj_graph.matrix_format}_matrix", sp.csr_matrix)
-                new_mat = mat_type((n, n), dtype=bool)
-                new_mat[adj_graph.index_of_state[gr_s], adj_graph.index_of_state[gr_f]] = True
-                adj_graph.boolean_decompress[box_start] = new_mat
-                adj_graph.labels.add(box_start)
-                updated = True
-            else:
-                mat = adj_graph.boolean_decompress[box_start]
-                if not mat[adj_graph.index_of_state[gr_s], adj_graph.index_of_state[gr_f]]:
-                    mat[adj_graph.index_of_state[gr_s], adj_graph.index_of_state[gr_f]] = True
-                    updated = True
-    return adj_graph, updated
-:with expression as target:
-    pass
