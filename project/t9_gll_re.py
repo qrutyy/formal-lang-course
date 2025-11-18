@@ -1,10 +1,10 @@
 from typing import Set, Dict, Tuple
 import networkx as nx
-from pyformlang.cfg import Symbol
+from pyformlang.finite_automaton import Symbol, DeterministicFiniteAutomaton
 from pyformlang.rsa import RecursiveAutomaton
-from pyformlang.finite_automaton import DeterministicFiniteAutomaton
 
 LABEL_NAME = "label"
+
 
 class GSSNode:
     def __init__(self, state: Tuple[Symbol, str], node: int):
@@ -31,6 +31,7 @@ class GSSNode:
             for cur_node in self.pop_set:
                 res_set.add((ptr, ret_state, cur_node))
         return res_set
+
 
 class GSStack:
     def __init__(self):
@@ -65,17 +66,23 @@ def init_rsm_data(rsm: RecursiveAutomaton):
             rsmstate2data[var][state.value] = {
                 "term_edges": {},
                 "var_edges": {},
-                "is_final": state in fa.final_states
+                "is_final": state in fa.final_states,
             }
 
         for st_from, transitions in fa.to_dict().items():
             state_key = st_from.value
             for sym, st_to in transitions.items():
                 if sym not in rsm.boxes:
-                    rsmstate2data[var][state_key]["term_edges"][sym] = (var, st_to.value)
+                    rsmstate2data[var][state_key]["term_edges"][sym] = (
+                        var,
+                        st_to.value,
+                    )
                 else:
                     start_sub = rsm.boxes[sym].dfa.start_state.value
-                    rsmstate2data[var][state_key]["var_edges"][sym] = ((sym, start_sub), (var, st_to.value))
+                    rsmstate2data[var][state_key]["var_edges"][sym] = (
+                        (sym, start_sub),
+                        (var, st_to.value),
+                    )
 
     start_symb = rsm.initial_label
     start_state = rsm.boxes[start_symb].dfa.start_state.value
@@ -101,7 +108,7 @@ def gll_step(sppf_node, nodes2edges, rsmstate2data, gss, accept_gssnode):
 
         post_pop_nodes = new_gss_node.add_edge(ret_rsm_state, gss_node)
         for pp_node in post_pop_nodes:
-             new_unprocessed.add(pp_node)
+            new_unprocessed.add(pp_node)
 
     if rsm_data["is_final"]:
         start_node_of_this_path = gss_node.node
@@ -122,7 +129,6 @@ def gll_based_cfpq(
     start_nodes: Set[int] = None,
     final_nodes: Set[int] = None,
 ) -> Set[Tuple[int, int]]:
-
     if start_nodes is None:
         start_nodes = set(graph.nodes)
     if final_nodes is None:
@@ -149,7 +155,9 @@ def gll_based_cfpq(
     while unprocessed:
         node_to_process = unprocessed.pop()
 
-        new_reach, new_unprocessed = gll_step(node_to_process, nodes2edges, rsmstate2data, gss, accept_gssnode)
+        new_reach, new_unprocessed = gll_step(
+            node_to_process, nodes2edges, rsmstate2data, gss, accept_gssnode
+        )
 
         reach_set.update(new_reach)
 

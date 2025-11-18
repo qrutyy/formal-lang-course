@@ -15,12 +15,11 @@ from cfpq_concrete_cases import CaseCFPQ, CASES_CFPQ
 
 try:
     from project.t6_cfg_actions import hellings_based_cfpq
-
     from project.t7_matrix_cfpq import matrix_based_cfpq
     from project.t8_tensor_re import tensor_based_cfpq, cfg_to_rsm, ebnf_to_rsm
     from project.t9_gll_re import gll_based_cfpq
 except ImportError:
-    print()
+    pytestmark = pytest.mark.skip("Task 9 is not ready to test!")
 
 
 class TestGLLBasedCFPQ:
