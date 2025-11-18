@@ -4,11 +4,8 @@ from pyformlang.cfg import Symbol
 from pyformlang.rsa import RecursiveAutomaton
 from pyformlang.finite_automaton import DeterministicFiniteAutomaton
 
-# This constant is fine as it's at the module level
 LABEL_NAME = "label"
 
-
-# The GSSNode and GSStack classes are well-defined and do not need changes.
 class GSSNode:
     def __init__(self, state: Tuple[Symbol, str], node: int):
         self.state = state
@@ -35,7 +32,6 @@ class GSSNode:
                 res_set.add((ptr, ret_state, cur_node))
         return res_set
 
-
 class GSStack:
     def __init__(self):
         self.body: Dict[Tuple[Tuple[Symbol, str], int], GSSNode] = {}
@@ -47,7 +43,6 @@ class GSStack:
         return self.body[key]
 
 
-# Helper initialization functions
 def init_graph_edges(graph: nx.DiGraph) -> Dict[int, Dict[Symbol, Set[int]]]:
     nodes2edges = {n: {} for n in graph.nodes}
     for u, v, data in graph.edges(data=True):
@@ -66,29 +61,21 @@ def init_rsm_data(rsm: RecursiveAutomaton):
         rsmstate2data[var] = {}
         fa: DeterministicFiniteAutomaton = box.dfa
 
-        # Ensure all states are initialized
         for state in fa.states:
             rsmstate2data[var][state.value] = {
                 "term_edges": {},
                 "var_edges": {},
-                "is_final": state in fa.final_states,
+                "is_final": state in fa.final_states
             }
 
-        # Populate transitions
         for st_from, transitions in fa.to_dict().items():
             state_key = st_from.value
             for sym, st_to in transitions.items():
-                if sym not in rsm.boxes:  # Terminal
-                    rsmstate2data[var][state_key]["term_edges"][sym] = (
-                        var,
-                        st_to.value,
-                    )
-                else:  # Non-terminal
+                if sym not in rsm.boxes:
+                    rsmstate2data[var][state_key]["term_edges"][sym] = (var, st_to.value)
+                else:
                     start_sub = rsm.boxes[sym].dfa.start_state.value
-                    rsmstate2data[var][state_key]["var_edges"][sym] = (
-                        (sym, start_sub),
-                        (var, st_to.value),
-                    )
+                    rsmstate2data[var][state_key]["var_edges"][sym] = ((sym, start_sub), (var, st_to.value))
 
     start_symb = rsm.initial_label
     start_state = rsm.boxes[start_symb].dfa.start_state.value
@@ -96,7 +83,6 @@ def init_rsm_data(rsm: RecursiveAutomaton):
     return rsmstate2data, start_rstate
 
 
-# This is the core workhorse function, now corrected to not use globals.
 def gll_step(sppf_node, nodes2edges, rsmstate2data, gss, accept_gssnode):
     gss_node, rsm_state, graph_node = sppf_node
     rsm_data = rsmstate2data[rsm_state[0]][rsm_state[1]]
@@ -104,30 +90,25 @@ def gll_step(sppf_node, nodes2edges, rsmstate2data, gss, accept_gssnode):
     new_reach = set()
     new_unprocessed = set()
 
-    # Case 1: Terminal transition
     for term, new_rsm_state in rsm_data["term_edges"].items():
         if term in nodes2edges.get(graph_node, {}):
             for next_graph_node in nodes2edges[graph_node][term]:
                 new_unprocessed.add((gss_node, new_rsm_state, next_graph_node))
 
-    # Case 2: Non-terminal transition (CALL)
     for var, (var_start_rsm_state, ret_rsm_state) in rsm_data["var_edges"].items():
         new_gss_node = gss.get_node(var_start_rsm_state, graph_node)
         new_unprocessed.add((new_gss_node, var_start_rsm_state, graph_node))
 
-        # Add return edge and check for existing pop operations
         post_pop_nodes = new_gss_node.add_edge(ret_rsm_state, gss_node)
         for pp_node in post_pop_nodes:
-            new_unprocessed.add(pp_node)
+             new_unprocessed.add(pp_node)
 
-    # Case 3: Final state transition (POP)
     if rsm_data["is_final"]:
         start_node_of_this_path = gss_node.node
         for pop_node in gss_node.pop(graph_node):
             gssn_pop, ret_state, ret_graph_node = pop_node
 
             if gssn_pop is accept_gssnode:
-                # Path completed, from original start node to the current return node
                 new_reach.add((start_node_of_this_path, ret_graph_node))
             else:
                 new_unprocessed.add((gssn_pop, ret_state, ret_graph_node))
@@ -135,13 +116,13 @@ def gll_step(sppf_node, nodes2edges, rsmstate2data, gss, accept_gssnode):
     return new_reach, new_unprocessed
 
 
-# This is the main function that your tests will call.
 def gll_based_cfpq(
     rsm: RecursiveAutomaton,
     graph: nx.DiGraph,
     start_nodes: Set[int] = None,
     final_nodes: Set[int] = None,
 ) -> Set[Tuple[int, int]]:
+
     if start_nodes is None:
         start_nodes = set(graph.nodes)
     if final_nodes is None:
@@ -151,30 +132,30 @@ def gll_based_cfpq(
     rsmstate2data, start_rstate = init_rsm_data(rsm)
     gss = GSStack()
 
-    # This is now a local variable, not global.
     accept_gssnode = gss.get_node(("$", "fin"), -1)
 
     unprocessed = set()
+    added = set()
     reach_set = set()
 
-    # Initialize the algorithm for each start node
     for sn in start_nodes:
         start_gss_node = gss.get_node(start_rstate, sn)
-        # Create the initial return path to the artificial accept node
         start_gss_node.add_edge(("$", "fin"), accept_gssnode)
-        unprocessed.add((start_gss_node, start_rstate, sn))
 
-    # Main worklist loop
+        initial_node = (start_gss_node, start_rstate, sn)
+        unprocessed.add(initial_node)
+        added.add(initial_node)
+
     while unprocessed:
         node_to_process = unprocessed.pop()
 
-        # Pass the accept_gssnode as a parameter
-        new_reach, new_unprocessed = gll_step(
-            node_to_process, nodes2edges, rsmstate2data, gss, accept_gssnode
-        )
+        new_reach, new_unprocessed = gll_step(node_to_process, nodes2edges, rsmstate2data, gss, accept_gssnode)
 
         reach_set.update(new_reach)
-        unprocessed.update(new_unprocessed)
 
-    # Final filtering based on specified start and final nodes
+        for item in new_unprocessed:
+            if item not in added:
+                unprocessed.add(item)
+                added.add(item)
+
     return {(s, f) for s, f in reach_set if s in start_nodes and f in final_nodes}
