@@ -7,11 +7,13 @@ from itertools import product
 from scipy.sparse import identity, kron, csr_matrix
 import scipy.sparse as scsp
 
+
 class AdjacencyMatrixFA:
     """
     A consistent and robust Finite Automaton representation using adjacency matrices.
     This version is designed to be compatible with all project tests.
     """
+
     states: list[State]
     n_states: int
     index_of_state: dict[State, int]
@@ -39,7 +41,7 @@ class AdjacencyMatrixFA:
 
         self.final_states = np.zeros(self.n_states, dtype=bool)
         for state in fa.final_states:
-             if state in self.index_of_state:
+            if state in self.index_of_state:
                 self.final_states[self.index_of_state[state]] = True
 
         self.transitions = {
@@ -53,7 +55,15 @@ class AdjacencyMatrixFA:
                 self.transitions[symbol][i, j] = True
 
     @classmethod
-    def from_components(cls, states, alphabet, transitions, start_states, final_states, matrix_format="csr"):
+    def from_components(
+        cls,
+        states,
+        alphabet,
+        transitions,
+        start_states,
+        final_states,
+        matrix_format="csr",
+    ):
         """Constructs an AdjacencyMatrixFA from its raw components."""
         obj = cls.__new__(cls)
         obj.states = states
@@ -81,7 +91,11 @@ class AdjacencyMatrixFA:
         if self.n_states == 0:
             return csr_matrix((0, 0), dtype=bool)
 
-        adj_matrix = sum(self.transitions.values()) if self.transitions else csr_matrix((self.n_states, self.n_states), dtype=bool)
+        adj_matrix = (
+            sum(self.transitions.values())
+            if self.transitions
+            else csr_matrix((self.n_states, self.n_states), dtype=bool)
+        )
         adj_matrix += identity(self.n_states, format=self.matrix_format, dtype=bool)
 
         prev_nnz = -1
@@ -129,14 +143,17 @@ def intersect_automata(
 ) -> AdjacencyMatrixFA:
     """Computes the intersection of two automata using the Kronecker product."""
 
-    new_states = [State((s1.value, s2.value)) for s1, s2 in product(automaton1.states, automaton2.states)]
+    new_states = [
+        State((s1.value, s2.value))
+        for s1, s2 in product(automaton1.states, automaton2.states)
+    ]
     shared_alphabet = automaton1.alphabet.intersection(automaton2.alphabet)
 
     new_transitions = {
         symbol: kron(
             automaton1.transitions[symbol],
             automaton2.transitions[symbol],
-            format=automaton1.matrix_format
+            format=automaton1.matrix_format,
         )
         for symbol in shared_alphabet
     }
@@ -159,7 +176,7 @@ def tensor_based_rpq(
     graph: MultiDiGraph,
     start_nodes: set[int] = None,
     final_nodes: set[int] = None,
-    matrix_format="csr"
+    matrix_format="csr",
 ) -> set[tuple[int, int]]:
     """Performs a regular path query using the tensor (Kronecker) product method."""
 

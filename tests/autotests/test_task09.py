@@ -20,7 +20,7 @@ try:
     from project.t8_tensor_re import tensor_based_cfpq, cfg_to_rsm, ebnf_to_rsm
     from project.t9_gll_re import gll_based_cfpq
 except ImportError:
-    pytestmark = pytest.mark.skip("Task 9 is not ready to test!")
+    print("")
 
 
 class TestGLLBasedCFPQ:

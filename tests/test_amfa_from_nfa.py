@@ -87,6 +87,7 @@ def test_am_emptyness(nfa, is_empty_truth):
     fa = t3.AdjacencyMatrixFA(nfa)
     assert fa.is_empty() == is_empty_truth
 
+
 def test_accepts_with_cycle():
     nfa = make_simple_nfa(True)
     fa = t3.AdjacencyMatrixFA(nfa)

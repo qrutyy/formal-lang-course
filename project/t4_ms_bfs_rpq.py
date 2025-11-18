@@ -1,13 +1,12 @@
 from project import t2_fa_utils as t2
 from project import t3_graph_fa as t3
 from networkx import MultiDiGraph
-import scipy.sparse as sp
 import numpy as np
+
 
 def ms_bfs_based_rpq(
     regex: str, graph: MultiDiGraph, start_nodes: set[int], final_nodes: set[int]
 ) -> set[tuple[int, int]]:
-
     reg_dfa = t2.regex_to_dfa(regex)
     graph_nfa = t2.graph_to_nfa(graph, start_nodes, final_nodes)
     reg_am = t3.AdjacencyMatrixFA(reg_dfa)

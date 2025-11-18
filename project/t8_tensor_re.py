@@ -1,11 +1,12 @@
 import networkx as nx
 from pyformlang.cfg import CFG
-from pyformlang.rsa import RecursiveAutomaton, Box
+from pyformlang.rsa import RecursiveAutomaton
 from pyformlang.finite_automaton import State, NondeterministicFiniteAutomaton
 from project.t2_fa_utils import graph_to_nfa
 from project.t3_graph_fa import AdjacencyMatrixFA, intersect_automata
 import scipy.sparse as scsp
 import numpy as np
+
 
 def cfg_to_rsm(cfg: CFG) -> RecursiveAutomaton:
     """Converts a CFG to a Recursive State Machine."""
@@ -24,7 +25,9 @@ def _build_rsm_fa(rsm: RecursiveAutomaton) -> NondeterministicFiniteAutomaton:
         # add all transitions, renaming states to be unique (Symbol, State) tuples
         for s_from, trans in box.dfa.to_dict().items():
             for label, s_to in trans.items():
-                rsm_nfa.add_transition(State((sym, s_from.value)), label, State((sym, s_to.value)))
+                rsm_nfa.add_transition(
+                    State((sym, s_from.value)), label, State((sym, s_to.value))
+                )
 
         for start_state in box.start_state:
             rsm_nfa.add_start_state(State((sym, start_state.value)))
@@ -108,7 +111,9 @@ def _add_nonterms(
                 j_graph = adj_graph.index_of_state[State(gr_end_val)]
 
                 if non_terminal not in adj_graph.transitions:
-                    adj_graph.transitions[non_terminal] = scsp.lil_matrix((adj_graph.n_states, adj_graph.n_states), dtype=bool)
+                    adj_graph.transitions[non_terminal] = scsp.lil_matrix(
+                        (adj_graph.n_states, adj_graph.n_states), dtype=bool
+                    )
                     adj_graph.alphabet.add(non_terminal)
 
                 if not adj_graph.transitions[non_terminal][i_graph, j_graph]:
