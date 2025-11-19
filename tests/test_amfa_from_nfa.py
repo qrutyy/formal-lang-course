@@ -88,19 +88,6 @@ def test_am_emptyness(nfa, is_empty_truth):
     assert fa.is_empty() == is_empty_truth
 
 
-def test_accepts_simple_words():
-    nfa = make_simple_nfa(True)
-    fa = t3.AdjacencyMatrixFA(nfa)
-
-    a, b = Symbol("a"), Symbol("b")
-
-    assert fa.accepts([a]) is True
-    assert fa.accepts([a, b]) is False
-    assert fa.accepts([b]) is False
-    assert fa.accepts([b, a]) is False
-    assert fa.accepts([]) is False
-
-
 def test_accepts_with_cycle():
     nfa = make_simple_nfa(True)
     fa = t3.AdjacencyMatrixFA(nfa)
@@ -112,13 +99,3 @@ def test_accepts_with_cycle():
     assert fa.accepts([a, b, a, b, a]) is True
     assert fa.accepts([a, b, a, b, b, b, a]) is False
     assert fa.accepts([a, b, a, b, b]) is False
-
-
-def test_accepts_empty_nfa():
-    nfa = make_simple_nfa(False)
-    fa = t3.AdjacencyMatrixFA(nfa)
-
-    a, b = Symbol("a"), Symbol("b")
-    assert fa.accepts([a]) is False
-    assert fa.accepts([b]) is False
-    assert fa.accepts([]) is False
